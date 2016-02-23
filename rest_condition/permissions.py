@@ -4,7 +4,9 @@
 import inspect
 import operator
 from rest_framework import permissions
-from rest_framework.types import Boolean
+
+# Import from rest_framework.types once the pull request is merged
+from .types import Boolean
 
 __all__ = ['ConditionalPermission', 'Condition', 'C', 'And', 'Or', 'Not']
 
