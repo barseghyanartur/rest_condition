@@ -4,6 +4,7 @@
 import inspect
 import operator
 from rest_framework import permissions
+from rest_framework.types import Boolean
 
 __all__ = ['ConditionalPermission', 'Condition', 'C', 'And', 'Or', 'Not']
 
@@ -82,6 +83,7 @@ class Condition(object):
 
     def evaluate_permissions(self, permission_name, *args, **kwargs):
         reduced_result = _NONE
+        messages = []
 
         for condition in self.perms_or_conds:
             if hasattr(condition, 'evaluate_permissions'):
@@ -90,6 +92,13 @@ class Condition(object):
                 if _is_permission_factory(condition):
                     condition = condition()
                 result = getattr(condition, permission_name)(*args, **kwargs)
+
+            message = result.message \
+                if hasattr(result, 'message') and result.message \
+                else None
+
+            if message:
+                messages.append(message)
 
             if reduced_result is _NONE:
                 reduced_result = result
@@ -100,9 +109,10 @@ class Condition(object):
                 break
 
         if reduced_result is not _NONE:
-            return not reduced_result if self.negated else reduced_result
+            ret = not reduced_result if self.negated else reduced_result
+            return Boolean(ret, '; '.join(messages))
 
-        return False
+        return Boolean(False, '; '.join(messages))
 
     def has_object_permission(self, request, view, obj):
         return self.evaluate_permissions('has_object_permission',
